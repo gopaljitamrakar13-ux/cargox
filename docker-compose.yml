@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: cargox_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: cargox
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db_data:/var/lib/mysql
+
+  backend:
+    build: ./backend
+    container_name: cargox_backend
+    restart: always
+    environment:
+      - FLASK_ENV=production
+      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://root:rootpassword@db:3306/cargox
+      - JWT_SECRET_KEY=super-secret-key-change-in-prod
+      - FIREBASE_CREDENTIALS=/app/firebase-adminsdk.json
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: cargox_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
