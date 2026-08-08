@@ -16,4 +16,4 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["gunicorn", "--worker-class", "eventlet", "--workers", "1", "--bind", "0.0.0.0:5000", "run:app"]
+CMD ["sh", "-c", "gunicorn --workers 1 --bind 0.0.0.0:$PORT run:app"]
