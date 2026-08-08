@@ -8,14 +8,18 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY requirements.txt /app/requirements.txt
 
 RUN python -m pip install --upgrade pip
-RUN python -m pip install --no-cache-dir -r requirements.txt
-RUN python -m pip install --no-cache-dir gunicorn
-RUN python -m gunicorn --version
 
-COPY . .
+RUN python -m pip install --no-cache-dir -r /app/requirements.txt
+
+# Verify PostgreSQL driver was installed
+RUN python -c "import psycopg2; print('PSYCOPG2 INSTALLED:', psycopg2.__version__)"
+
+RUN python -m pip install --no-cache-dir gunicorn
+
+COPY . /app
 
 EXPOSE 5000
 
