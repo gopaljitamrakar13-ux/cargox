@@ -2,11 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import api from '../../../api/axios';
 import GlassCard from '../../../components/ui/GlassCard';
-import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import { motion } from 'framer-motion';
-import { Send, User as UserIcon } from 'lucide-react';
-// import { io } from 'socket.io-client'; // Requires npm install socket.io-client
+import { Send } from 'lucide-react';
+import { io } from 'socket.io-client';
+
+// Derive the Socket.IO server URL from the same base as the API
+// In development: ws://localhost:5000
+// In production:  wss://your-backend.onrender.com
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
+  || import.meta.env.VITE_API_URL?.replace('/api', '')
+  || 'http://localhost:5000';
 
 const ChatApp = () => {
   const { user } = useAuth();
@@ -14,10 +20,11 @@ const ChatApp = () => {
   const [newMessage, setNewMessage] = useState('');
   const [shipments, setShipments] = useState([]);
   const [activeShipmentId, setActiveShipmentId] = useState(null);
-  // const socketRef = useRef(null);
+  const [connected, setConnected] = useState(false);
+  const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Fetch user's active shipments for chat selection
+  // Fetch user's shipments for chat selection
   useEffect(() => {
     const fetchShipments = async () => {
       try {
@@ -27,74 +34,96 @@ const ChatApp = () => {
           setActiveShipmentId(response.data[0].id);
         }
       } catch (error) {
-        console.error("Failed to load shipments for chat", error);
+        console.error('Failed to load shipments for chat', error);
       }
     };
     fetchShipments();
   }, []);
 
-  // Initialize Socket and fetch history when active shipment changes
+  // Initialize Socket.IO connection with JWT auth
   useEffect(() => {
-    if (!activeShipmentId) return;
+    const token = localStorage.getItem('access_token');
 
+    // Connect with JWT token in query string (server reads it server-side)
+    socketRef.current = io(SOCKET_URL, {
+      query: { token },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    socketRef.current.on('connect', () => {
+      setConnected(true);
+      console.log('[Socket.IO] Connected:', socketRef.current.id);
+    });
+
+    socketRef.current.on('disconnect', () => {
+      setConnected(false);
+      console.log('[Socket.IO] Disconnected');
+    });
+
+    socketRef.current.on('receive_message', (msg) => {
+      setMessages((prev) => [...prev, msg]);
+    });
+
+    socketRef.current.on('error', (err) => {
+      console.error('[Socket.IO] Error:', err);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  // Join/leave room and fetch history when active shipment changes
+  useEffect(() => {
+    if (!activeShipmentId || !socketRef.current) return;
+
+    // Leave previous room and join new one
+    socketRef.current.emit('join', { shipment_id: activeShipmentId });
+
+    // Fetch chat history from REST API
     const fetchHistory = async () => {
       try {
         const response = await api.get(`/chat/shipment/${activeShipmentId}`);
         setMessages(response.data);
       } catch (error) {
-        console.error("Failed to load chat history", error);
+        console.error('Failed to load chat history', error);
       }
     };
     fetchHistory();
 
-    /* 
-    // Uncomment when socket.io-client is installed
-    socketRef.current = io('http://localhost:5000');
-    
-    socketRef.current.emit('join', { shipment_id: activeShipmentId });
-    
-    socketRef.current.on('receive_message', (msg) => {
-      setMessages(prev => [...prev, msg]);
-    });
-
     return () => {
-      socketRef.current.emit('leave', { shipment_id: activeShipmentId });
-      socketRef.current.disconnect();
+      if (socketRef.current) {
+        socketRef.current.emit('leave', { shipment_id: activeShipmentId });
+      }
     };
-    */
   }, [activeShipmentId]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !activeShipmentId) return;
+    if (!newMessage.trim() || !activeShipmentId || !socketRef.current) return;
 
-    /*
-    // Uncomment when socket.io-client is installed
     socketRef.current.emit('send_message', {
       shipment_id: activeShipmentId,
-      sender_id: user.id,
-      content: newMessage.trim()
-    });
-    */
-
-    // Optimistic UI update (Remove when socket is active)
-    setMessages(prev => [...prev, {
-      id: Date.now(),
-      sender_id: user.id,
       content: newMessage.trim(),
-      created_at: new Date().toISOString()
-    }]);
+      // sender_id from JWT is used server-side for security; this is just for UI optimistic update
+      sender_id: user?.id,
+    });
 
     setNewMessage('');
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-6"
@@ -108,12 +137,12 @@ const ChatApp = () => {
               key={shipment.id}
               onClick={() => setActiveShipmentId(shipment.id)}
               className={`w-full text-left p-3 rounded-lg transition-colors border ${
-                activeShipmentId === shipment.id 
-                  ? 'bg-primary/20 border-primary/50 text-white' 
+                activeShipmentId === shipment.id
+                  ? 'bg-primary/20 border-primary/50 text-white'
                   : 'bg-white/5 border-transparent text-textSecondary hover:bg-white/10'
               }`}
             >
-              <div className="font-medium">Shipment {shipment.id.substring(0,8).toUpperCase()}</div>
+              <div className="font-medium">Shipment {shipment.id.substring(0, 8).toUpperCase()}</div>
               <div className="text-xs opacity-70 truncate">{shipment.pickup_address} → {shipment.dropoff_address}</div>
             </button>
           ))}
@@ -129,10 +158,11 @@ const ChatApp = () => {
         <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
           <div>
             <h3 className="text-white font-bold">
-              {activeShipmentId ? `Shipment ${activeShipmentId.substring(0,8).toUpperCase()}` : 'Select a shipment'}
+              {activeShipmentId ? `Shipment ${activeShipmentId.substring(0, 8).toUpperCase()}` : 'Select a shipment'}
             </h3>
-            <p className="text-xs text-success flex items-center">
-              <span className="w-2 h-2 rounded-full bg-success mr-2"></span> Real-time Channel Secure
+            <p className={`text-xs flex items-center ${connected ? 'text-success' : 'text-error'}`}>
+              <span className={`w-2 h-2 rounded-full mr-2 ${connected ? 'bg-success' : 'bg-error'}`}></span>
+              {connected ? 'Live — Real-time channel active' : 'Connecting...'}
             </p>
           </div>
         </div>
@@ -145,15 +175,15 @@ const ChatApp = () => {
             </div>
           )}
           {messages.map((msg, index) => {
-            const isMe = msg.sender_id === user.id;
+            const isMe = msg.sender_id === user?.id;
             return (
-              <div key={index} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+              <div key={msg.id || index} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[70%] rounded-2xl px-4 py-2 ${
                   isMe ? 'bg-primary text-white rounded-br-none' : 'bg-white/10 text-white rounded-bl-none'
                 }`}>
                   <p className="text-sm">{msg.content}</p>
                   <p className="text-[10px] opacity-60 mt-1 text-right">
-                    {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </div>
@@ -169,11 +199,11 @@ const ChatApp = () => {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
+              placeholder={activeShipmentId ? 'Type a message...' : 'Select a shipment first'}
               className="flex-1 glass-input bg-white/5"
-              disabled={!activeShipmentId}
+              disabled={!activeShipmentId || !connected}
             />
-            <Button type="submit" disabled={!activeShipmentId} className="px-4">
+            <Button type="submit" disabled={!activeShipmentId || !connected} className="px-4">
               <Send className="w-5 h-5" />
             </Button>
           </form>

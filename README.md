@@ -9,7 +9,7 @@ CargoX is an enterprise-grade, real-time logistics and freight management platfo
 - **Real-Time Tracking**: Geospatial mapping using Leaflet with real-time simulated telemetry.
 - **Instant Chat & Notifications**: Real-time WebSockets communication (Socket.IO) between shippers and carriers.
 - **Secure Authentication**: Firebase ID token validation paired with stateless JWT access tokens.
-- **Scalable Backend**: Python Flask using the application factory pattern, SQLAlchemy ORM, and MySQL.
+- **Scalable Backend**: Python Flask using the application factory pattern, SQLAlchemy ORM, and PostgreSQL.
 
 ## 🛠️ Technology Stack
 
@@ -26,23 +26,23 @@ CargoX is an enterprise-grade, real-time logistics and freight management platfo
 **Backend**
 - Python 3.10+
 - Flask (App Factory)
-- Flask-SQLAlchemy (MySQL)
+- Flask-SQLAlchemy (PostgreSQL)
 - Flask-JWT-Extended
 - Flask-SocketIO
 - Firebase Admin SDK
-- PyMySQL
+- PyPostgreSQL
 
 ## 📦 Local Development
 
 ### Prerequisites
 - Node.js v18+
 - Python 3.10+
-- MySQL Server (or Docker)
+- PostgreSQL Server (or Docker)
 
 ### 1. Database Setup
 ```bash
-# Initialize MySQL Database using the provided script
-mysql -u root -p < init.sql
+# Initialize PostgreSQL Database using the provided script
+PostgreSQL -u root -p < init.sql
 ```
 
 ### 2. Backend Setup
@@ -80,7 +80,7 @@ To deploy the entire stack using Docker Compose:
 docker-compose up --build -d
 ```
 This will spin up:
-- MySQL Database (Port 3306)
+- PostgreSQL Database (Port 5432)
 - Flask Backend (Port 5000)
 - React Nginx Server (Port 80)
 

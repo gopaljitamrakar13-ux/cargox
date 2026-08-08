@@ -13,7 +13,7 @@ Key requirements:
 The system will follow a Modular Client-Server Architecture:
 - **Frontend (Client)**: React 19 SPA served via Vite. Deployed on Vercel.
 - **Backend (API)**: Python Flask REST API + WebSocket Server (Socket.IO). Deployed on Render.
-- **Database**: MySQL relational database on Railway.
+- **Database**: PostgreSQL relational database on Railway.
 - **External Services**: 
   - Firebase (Auth)
   - Cloudinary (Document/Image Storage)

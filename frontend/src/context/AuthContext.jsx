@@ -9,10 +9,8 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check for stored token
     const token = localStorage.getItem('access_token');
     if (token) {
-      // Decode or verify token with backend
       checkAuthStatus();
     } else {
       setLoading(false);
@@ -21,11 +19,12 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await api.get('/auth/profile'); // Assume this endpoint exists to fetch user profile
+      // Fetch full profile (includes full_name, phone, role, etc.)
+      const response = await api.get('/auth/profile');
       setUser(response.data);
       setIsAuthenticated(true);
     } catch (error) {
-      console.error("Auth check failed:", error);
+      console.error('Auth check failed:', error);
       logout();
     } finally {
       setLoading(false);
@@ -35,10 +34,14 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { access_token, user: userData } = response.data;
+      const { access_token } = response.data;
       localStorage.setItem('access_token', access_token);
-      setUser(userData);
+
+      // After storing token, fetch the full profile so user.full_name etc. are available
+      const profileResponse = await api.get('/auth/profile');
+      setUser(profileResponse.data);
       setIsAuthenticated(true);
+
       return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || 'Login failed' };
@@ -48,6 +51,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       await api.post('/auth/register', userData);
+      // After registering, log in to get the full profile
       return await login(userData.email, userData.password);
     } catch (error) {
       return { success: false, error: error.response?.data?.error || 'Registration failed' };

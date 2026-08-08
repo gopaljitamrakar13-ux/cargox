@@ -1,21 +1,65 @@
+# ==================================================
 # Python
+# ==================================================
 backend/venv/
-backend/__pycache__/
+venv/
+__pycache__/
+**/__pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
 
-# Node
+# ==================================================
+# Node / Frontend
+# ==================================================
 frontend/node_modules/
 frontend/dist/
+node_modules/
+dist/
 
+# ==================================================
 # VS Code
+# ==================================================
 .vscode/
 
-# Environment
+# ==================================================
+# Environment Files (NEVER commit these)
+# ==================================================
 .env
 *.env
+.env.local
+.env.*.local
 
-# Firebase
-backend/firebase-adminsdk.json
+# ==================================================
+# Database files (never commit SQLite)
+# ==================================================
+*.db
+*.sqlite
+*.sqlite3
+instance/
 
+# ==================================================
+# Firebase Admin SDK credentials (NEVER commit)
+# ==================================================
+firebase-adminsdk.json
+*-adminsdk-*.json
+serviceAccountKey.json
+
+# ==================================================
 # Logs
+# ==================================================
 *.log
+logs/
+
+# ==================================================
+# Migration cache (keep migrations folder, not cache)
+# ==================================================
+backend/app/migrations/__pycache__/
+
+# ==================================================
+# OS files
+# ==================================================
+.DS_Store
+Thumbs.db
