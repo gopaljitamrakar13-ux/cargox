@@ -10,10 +10,13 @@ RUN apt-get update && apt-get install -y \
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --upgrade pip
+RUN python -m pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --no-cache-dir gunicorn
+RUN python -m gunicorn --version
 
 COPY . .
 
 EXPOSE 5000
 
-CMD ["sh", "-c", "gunicorn --workers 1 --bind 0.0.0.0:$PORT run:app"]
+CMD ["sh", "-c", "python -m gunicorn --workers 1 --bind 0.0.0.0:${PORT:-5000} run:app"]
