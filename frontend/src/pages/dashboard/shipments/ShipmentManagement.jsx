@@ -38,7 +38,7 @@ const ShipmentManagement = () => {
       reset();
       fetchShipments();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to create shipment');
+      toast.error(error.response?.data?.error || error.response?.data?.msg || 'Failed to create shipment');
     } finally {
       setIsSubmitting(false);
     }

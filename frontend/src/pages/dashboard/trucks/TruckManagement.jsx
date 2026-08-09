@@ -36,7 +36,7 @@ const TruckManagement = () => {
       reset();
       fetchTrucks();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to add truck');
+      toast.error(error.response?.data?.error || error.response?.data?.msg || 'Failed to add truck');
     } finally {
       setIsSubmitting(false);
     }

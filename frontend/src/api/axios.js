@@ -3,7 +3,7 @@ import axios from 'axios';
 // In development: Vite proxies /api → localhost:5000 (see vite.config.js)
 // In production:  VITE_API_URL must point to your Render backend
 //   e.g. VITE_API_URL=https://cargox-backend.onrender.com/api
-const baseURL = import.meta.env.VITE_API_URL || '/api';
+const baseURL = import.meta.env.VITE_API_URL || 'https://cargox.onrender.com/api';
 
 const api = axios.create({
   baseURL,
@@ -29,10 +29,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 422) {
       // Token expired or invalid — clear storage
       localStorage.removeItem('access_token');
-      // Let components handle redirect
+      // Redirect to login if not already there
+      if (!window.location.pathname.startsWith('/auth')) {
+        window.location.href = '/auth/login';
+      }
     }
     return Promise.reject(error);
   }

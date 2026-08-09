@@ -12,7 +12,7 @@ import { io } from 'socket.io-client';
 // In production:  wss://your-backend.onrender.com
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
   || import.meta.env.VITE_API_URL?.replace('/api', '')
-  || 'http://localhost:5000';
+  || 'https://cargox.onrender.com';
 
 const ChatApp = () => {
   const { user } = useAuth();

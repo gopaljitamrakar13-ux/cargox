@@ -44,7 +44,8 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.response?.data?.error || 'Login failed' };
+      const errorMsg = error.response?.data?.error || error.response?.data?.msg || 'Login failed';
+      return { success: false, error: errorMsg };
     }
   };
 
@@ -54,7 +55,8 @@ export const AuthProvider = ({ children }) => {
       // After registering, log in to get the full profile
       return await login(userData.email, userData.password);
     } catch (error) {
-      return { success: false, error: error.response?.data?.error || 'Registration failed' };
+      const errorMsg = error.response?.data?.error || error.response?.data?.msg || error.message || 'Registration failed';
+      return { success: false, error: errorMsg };
     }
   };
 
