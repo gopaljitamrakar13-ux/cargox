@@ -49,7 +49,7 @@ class Config:
     # =========================
     # Comma-separated list of allowed origins, e.g.:
     # FRONTEND_URL=http://localhost:5173,https://cargox.onrender.com
-    _frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    _frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000,https://cargox-frontend.onrender.com')
     CORS_ORIGINS = [origin.strip() for origin in _frontend_url.split(',')]
 
     # =========================
