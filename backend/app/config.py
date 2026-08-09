@@ -49,8 +49,21 @@ class Config:
     # =========================
     # Comma-separated list of allowed origins, e.g.:
     # FRONTEND_URL=http://localhost:5173,https://cargox.onrender.com
-    _frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000,https://cargox-frontend.onrender.com')
-    CORS_ORIGINS = [origin.strip() for origin in _frontend_url.split(',')]
+    _frontend_url = os.getenv('FRONTEND_URL', '')
+    
+    # Always include these essential origins regardless of the environment variable
+    _base_origins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://cargox-frontend.onrender.com'
+    ]
+    
+    # Add any extra origins from the FRONTEND_URL env var
+    if _frontend_url:
+        _extra_origins = [origin.strip() for origin in _frontend_url.split(',') if origin.strip()]
+        _base_origins.extend(_extra_origins)
+        
+    CORS_ORIGINS = list(set(_base_origins))
 
     # =========================
     # JWT Settings
