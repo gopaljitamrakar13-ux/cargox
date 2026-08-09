@@ -116,6 +116,9 @@ def login():
     if not user or not bcrypt.check_password_hash(user.password_hash, password):
         return jsonify({"error": "Invalid email or password"}), 401
         
+    if not user.is_active:
+        return jsonify({"error": "Account suspended"}), 403
+        
     access_token = create_access_token(identity=user.id)
     
     return jsonify({

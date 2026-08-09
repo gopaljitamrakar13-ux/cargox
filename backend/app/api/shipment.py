@@ -48,9 +48,14 @@ def list_shipments():
         shipments = Shipment.query.filter_by(customer_id=user.customer_profile.id).all()
     elif user.role.name == 'Driver':
         shipments = Shipment.query.filter_by(driver_id=user.driver_profile.id).all()
+    elif user.role.name == 'TruckOwner':
+        truck_ids = [t.id for t in user.truck_owner_profile.trucks] if user.truck_owner_profile else []
+        shipments = Shipment.query.filter(Shipment.truck_id.in_(truck_ids)).all() if truck_ids else []
+    elif user.role.name == 'TransportOwner':
+        truck_ids = [t.id for t in user.transport_owner_profile.trucks] if user.transport_owner_profile else []
+        shipments = Shipment.query.filter(Shipment.truck_id.in_(truck_ids)).all() if truck_ids else []
     else:
-        # Simplified: Owners see all for demo, ideally filter by assigned truck's owner
-        shipments = Shipment.query.all() 
+        shipments = []
         
     data = [{
         "id": s.id,

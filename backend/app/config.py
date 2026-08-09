@@ -11,7 +11,14 @@ class Config:
     # =========================
     # App Settings
     # =========================
-    SECRET_KEY = os.getenv('SECRET_KEY', 'super-secret-key-cargox')
+    FLASK_ENV = os.getenv('FLASK_ENV', 'production')
+    SECRET_KEY = os.getenv('SECRET_KEY')
+    
+    if not SECRET_KEY:
+        if FLASK_ENV == 'production':
+            raise RuntimeError("SECRET_KEY environment variable is missing. It is required in production.")
+        SECRET_KEY = 'super-secret-key-cargox'
+        
     DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() in ('true', '1')
 
     # =========================
@@ -24,8 +31,6 @@ class Config:
         _DATABASE_URL = _DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
     # In production, DATABASE_URL MUST be set. Never fall back to SQLite in prod.
-    FLASK_ENV = os.getenv('FLASK_ENV', 'production')
-
     if not _DATABASE_URL:
         if FLASK_ENV == 'production':
             raise RuntimeError(
@@ -50,7 +55,12 @@ class Config:
     # =========================
     # JWT Settings
     # =========================
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-cargox')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+    if not JWT_SECRET_KEY:
+        if FLASK_ENV == 'production':
+            raise RuntimeError("JWT_SECRET_KEY environment variable is missing. It is required in production.")
+        JWT_SECRET_KEY = 'jwt-secret-key-cargox'
+        
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
 
     # =========================

@@ -64,13 +64,12 @@ def handle_message(data):
     token = request.args.get('token')
     sender_id = get_user_id_from_token(token) if token else None
 
-    # Fallback: allow unauthenticated in dev but log warning
     if not sender_id:
-        sender_id = data.get('sender_id')  # Dev/testing only
-        print(f"[Socket.IO] WARNING: Message sent without JWT auth — using client sender_id: {sender_id}")
+        emit('error', {'message': 'Valid authentication token is required'})
+        return
 
-    if not shipment_id or not content or not sender_id:
-        emit('error', {'message': 'shipment_id, content, and authentication are required'})
+    if not shipment_id or not content:
+        emit('error', {'message': 'shipment_id and content are required'})
         return
 
     room_name = f"shipment_{shipment_id}"
