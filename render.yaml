@@ -39,9 +39,8 @@ services:
   # ==============================
   # CargoX Frontend - React/Vite
   # ==============================
-  - type: web
+  - type: static
     name: cargox-frontend
-    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
