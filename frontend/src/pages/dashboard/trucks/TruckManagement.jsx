@@ -11,7 +11,37 @@ const TruckManagement = () => {
   const [trucks, setTrucks] = useState([]);
   const [loading, setLoading] = useState(true);
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { register: registerEdit, handleSubmit: handleEditSubmit, reset: resetEdit, formState: { errors: editErrors } } = useForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingTruck, setEditingTruck] = useState(null);
+
+  useEffect(() => {
+    if (editingTruck) {
+      resetEdit(editingTruck);
+    }
+  }, [editingTruck, resetEdit]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this truck?')) return;
+    try {
+      await api.delete(`/trucks/${id}`);
+      toast.success('Truck deleted successfully');
+      fetchTrucks();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to delete truck');
+    }
+  };
+
+  const onEditSubmit = async (data) => {
+    try {
+      await api.put(`/trucks/${editingTruck.id}`, data);
+      toast.success('Truck updated successfully');
+      setEditingTruck(null);
+      fetchTrucks();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to update truck');
+    }
+  };
 
   const fetchTrucks = async () => {
     try {
@@ -108,6 +138,7 @@ const TruckManagement = () => {
                       <th className="pb-3 font-medium">Type</th>
                       <th className="pb-3 font-medium">Capacity (Tons)</th>
                       <th className="pb-3 font-medium">Status</th>
+                      <th className="pb-3 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -125,6 +156,10 @@ const TruckManagement = () => {
                             {truck.status}
                           </span>
                         </td>
+                        <td className="py-4 text-right space-x-3">
+                          <button onClick={() => setEditingTruck(truck)} className="text-primary hover:text-neonBlue text-sm font-medium transition-colors">Edit</button>
+                          <button onClick={() => handleDelete(truck.id)} className="text-error hover:text-red-400 text-sm font-medium transition-colors">Delete</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -134,6 +169,63 @@ const TruckManagement = () => {
           </GlassCard>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingTruck && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <GlassCard className="w-full max-w-md relative">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">Edit Truck</h2>
+              <button onClick={() => setEditingTruck(null)} className="text-textSecondary hover:text-white transition-colors">✕</button>
+            </div>
+            <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
+              <Input
+                label="Registration Number"
+                {...registerEdit('registration_number', { required: 'Required' })}
+                error={editErrors.registration_number?.message}
+              />
+              <Input
+                label="Capacity (Tons)"
+                type="number"
+                step="0.1"
+                {...registerEdit('capacity_tons', { required: 'Required' })}
+                error={editErrors.capacity_tons?.message}
+              />
+              <div className="flex flex-col w-full">
+                <label className="text-sm font-medium text-textSecondary mb-2">Truck Type</label>
+                <select 
+                  className="glass-input appearance-none bg-surface"
+                  {...registerEdit('truck_type')}
+                >
+                  <option value="Open">Open</option>
+                  <option value="Container">Container</option>
+                  <option value="Trailer">Trailer</option>
+                  <option value="Refrigerated">Refrigerated</option>
+                </select>
+              </div>
+              <div className="flex flex-col w-full">
+                <label className="text-sm font-medium text-textSecondary mb-2">Status</label>
+                <select 
+                  className="glass-input appearance-none bg-surface"
+                  {...registerEdit('status')}
+                >
+                  <option value="AVAILABLE">AVAILABLE</option>
+                  <option value="IN_TRANSIT">IN_TRANSIT</option>
+                  <option value="MAINTENANCE">MAINTENANCE</option>
+                </select>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <Button type="button" onClick={() => setEditingTruck(null)} className="flex-1 bg-white/5 hover:bg-white/10 text-white border border-white/10">
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1">
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </GlassCard>
+        </div>
+      )}
     </motion.div>
   );
 };

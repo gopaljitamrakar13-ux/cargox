@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 import { LogOut, Menu, User, Truck, Package, Settings, Map, MessageSquare, Bell, X } from 'lucide-react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -8,6 +9,34 @@ import 'react-toastify/dist/ReactToastify.css';
 const DashboardLayout = () => {
   const { isAuthenticated, loading, user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+    }
+  }, [isAuthenticated]);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await api.get('/notifications/');
+      setNotifications(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const markAsRead = async (id) => {
+    try {
+      await api.put(`/notifications/${id}/read`);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
@@ -87,11 +116,44 @@ const DashboardLayout = () => {
           <div className="hidden md:block text-xl font-display font-semibold truncate px-4">
             Welcome back, {user?.full_name || user?.email || 'User'}
           </div>
-          <div className="flex items-center space-x-2 md:space-x-4 ml-auto">
-            <button className="relative p-2 text-textSecondary hover:text-white transition-colors">
+          <div className="flex items-center space-x-2 md:space-x-4 ml-auto relative">
+            <button 
+              className="relative p-2 text-textSecondary hover:text-white transition-colors"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 text-[10px] flex items-center justify-center bg-error text-white font-bold rounded-full">{unreadCount}</span>
+              )}
             </button>
+            
+            {showNotifications && (
+              <div className="absolute top-12 right-12 w-80 bg-surface/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-glass z-50 overflow-hidden">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                  <h3 className="text-white font-bold">Notifications</h3>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-textSecondary text-sm">No notifications</div>
+                  ) : (
+                    notifications.map(n => (
+                      <div 
+                        key={n.id} 
+                        className={`p-4 border-b border-white/5 text-sm ${n.is_read ? 'opacity-60' : 'bg-primary/10'}`}
+                        onClick={() => !n.is_read && markAsRead(n.id)}
+                      >
+                        <h4 className={`font-semibold ${n.is_read ? 'text-textSecondary' : 'text-white'}`}>{n.title}</h4>
+                        <p className="text-textSecondary mt-1">{n.message}</p>
+                        <div className="text-[10px] text-textSecondary mt-2">
+                          {new Date(n.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+            
             <div className="w-10 h-10 flex-shrink-0 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-neon-blue">
               <User className="w-5 h-5 text-white" />
             </div>

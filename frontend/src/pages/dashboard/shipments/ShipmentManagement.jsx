@@ -12,8 +12,38 @@ const ShipmentManagement = () => {
   const [shipments, setShipments] = useState([]);
   const [loading, setLoading] = useState(true);
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { register: registerEdit, handleSubmit: handleEditSubmit, reset: resetEdit, formState: { errors: editErrors } } = useForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingShipment, setEditingShipment] = useState(null);
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (editingShipment) {
+      resetEdit(editingShipment);
+    }
+  }, [editingShipment, resetEdit]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to cancel this shipment?')) return;
+    try {
+      await api.delete(`/shipments/${id}`);
+      toast.success('Shipment cancelled successfully');
+      fetchShipments();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to cancel shipment');
+    }
+  };
+
+  const onEditSubmit = async (data) => {
+    try {
+      await api.put(`/shipments/${editingShipment.id}`, data);
+      toast.success('Shipment updated successfully');
+      setEditingShipment(null);
+      fetchShipments();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to update shipment');
+    }
+  };
 
   const fetchShipments = async () => {
     try {
@@ -113,6 +143,7 @@ const ShipmentManagement = () => {
                       <th className="pb-3 font-medium">Route</th>
                       <th className="pb-3 font-medium">Weight</th>
                       <th className="pb-3 font-medium">Status</th>
+                      <th className="pb-3 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -137,6 +168,14 @@ const ShipmentManagement = () => {
                             {shipment.status}
                           </span>
                         </td>
+                        <td className="py-4 text-right space-x-3">
+                          {(user?.role === 'Customer' || user?.role === 'Admin') && (
+                            <>
+                              <button onClick={() => setEditingShipment(shipment)} className="text-primary hover:text-neonBlue text-sm font-medium transition-colors">Edit</button>
+                              <button onClick={() => handleDelete(shipment.id)} className="text-error hover:text-red-400 text-sm font-medium transition-colors">Cancel</button>
+                            </>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -146,6 +185,52 @@ const ShipmentManagement = () => {
           </GlassCard>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingShipment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <GlassCard className="w-full max-w-md relative">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">Edit Shipment</h2>
+              <button onClick={() => setEditingShipment(null)} className="text-textSecondary hover:text-white transition-colors">✕</button>
+            </div>
+            <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
+              <Input
+                label="Pickup Address"
+                {...registerEdit('pickup_address', { required: 'Required' })}
+                error={editErrors.pickup_address?.message}
+              />
+              <Input
+                label="Drop-off Address"
+                {...registerEdit('dropoff_address', { required: 'Required' })}
+                error={editErrors.dropoff_address?.message}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Weight (Tons)"
+                  type="number"
+                  step="0.1"
+                  {...registerEdit('weight_tons', { required: 'Required' })}
+                  error={editErrors.weight_tons?.message}
+                />
+                <Input
+                  label="Material Type"
+                  {...registerEdit('material_type', { required: 'Required' })}
+                  error={editErrors.material_type?.message}
+                />
+              </div>
+              <div className="pt-4 flex gap-3">
+                <Button type="button" onClick={() => setEditingShipment(null)} className="flex-1 bg-white/5 hover:bg-white/10 text-white border border-white/10">
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1">
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </GlassCard>
+        </div>
+      )}
     </motion.div>
   );
 };

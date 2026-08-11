@@ -34,13 +34,19 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { access_token } = response.data;
+      const { access_token, user: partialUser } = response.data;
       localStorage.setItem('access_token', access_token);
 
-      // After storing token, fetch the full profile so user.full_name etc. are available
-      const profileResponse = await api.get('/auth/profile');
-      setUser(profileResponse.data);
+      // We can set authenticated state immediately so UI unblocks
       setIsAuthenticated(true);
+      setUser(partialUser);
+
+      // Fetch the full profile asynchronously in background
+      api.get('/auth/profile').then(profileResponse => {
+        setUser(profileResponse.data);
+      }).catch(err => {
+        console.error("Failed to fetch full profile in background:", err);
+      });
 
       return { success: true };
     } catch (error) {

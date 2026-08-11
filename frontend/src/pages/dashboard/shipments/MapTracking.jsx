@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import GlassCard from '../../../components/ui/GlassCard';
 import { motion } from 'framer-motion';
 import L from 'leaflet';
+import api from '../../../api/axios';
 
 // Fix Leaflet default icons for Vite (CDN-based approach that always works)
 delete L.Icon.Default.prototype._getIconUrl;
@@ -33,45 +34,7 @@ const pickupIcon = createIcon('#10B981');   // Green
 const dropoffIcon = createIcon('#EF4444');  // Red
 const truckIcon = createIcon('#00F0FF');    // Neon blue
 
-// Demo data: Multiple shipments with locations across India
-const demoShipments = [
-  {
-    id: 'SHP-001',
-    label: 'Mumbai → Delhi',
-    pickup: [19.0760, 72.8777],
-    dropoff: [28.7041, 77.1025],
-    truckCurrent: [23.2599, 77.4126],  // Bhopal (midway)
-    status: 'In Transit',
-    eta: '8h 30m',
-    progress: 55,
-    driver: 'Rajesh Kumar',
-    truck: 'MH-04-AB-1234',
-  },
-  {
-    id: 'SHP-002',
-    label: 'Bangalore → Chennai',
-    pickup: [12.9716, 77.5946],
-    dropoff: [13.0827, 80.2707],
-    truckCurrent: [12.9249, 79.1325],  // Vellore area
-    status: 'In Transit',
-    eta: '1h 45m',
-    progress: 78,
-    driver: 'Suresh Reddy',
-    truck: 'KA-01-CD-5678',
-  },
-  {
-    id: 'SHP-003',
-    label: 'Kolkata → Patna',
-    pickup: [22.5726, 88.3639],
-    dropoff: [25.6093, 85.1376],
-    truckCurrent: [24.7914, 84.9916],  // Near Gaya
-    status: 'In Transit',
-    eta: '2h 10m',
-    progress: 82,
-    driver: 'Amit Singh',
-    truck: 'WB-06-EF-9012',
-  },
-];
+// Real API data will be used below
 
 // Component to fit map bounds to current shipment
 const FitBounds = ({ bounds }) => {
@@ -85,11 +48,65 @@ const FitBounds = ({ bounds }) => {
 };
 
 const MapTracking = () => {
+  const [shipments, setShipments] = React.useState([]);
   const [selectedIdx, setSelectedIdx] = React.useState(0);
-  const shipment = demoShipments[selectedIdx];
+  const [trackingData, setTrackingData] = React.useState([]);
 
-  const routePolyline = [shipment.pickup, shipment.truckCurrent, shipment.dropoff];
-  const bounds = [shipment.pickup, shipment.dropoff];
+  React.useEffect(() => {
+    const fetchShipments = async () => {
+      try {
+        const response = await api.get('/shipments/');
+        setShipments(response.data);
+      } catch (error) {
+        console.error('Failed to fetch shipments', error);
+      }
+    };
+    fetchShipments();
+  }, []);
+
+  React.useEffect(() => {
+    if (shipments.length > 0) {
+      const fetchTracking = async () => {
+        try {
+          const shipment = shipments[selectedIdx];
+          const response = await api.get(`/shipments/${shipment.id}/tracking`);
+          setTrackingData(response.data);
+        } catch (error) {
+          console.error('Failed to fetch tracking data', error);
+        }
+      };
+      fetchTracking();
+    }
+  }, [selectedIdx, shipments]);
+
+  if (shipments.length === 0) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 text-center text-textSecondary h-[calc(100vh-8rem)] flex items-center justify-center">
+        No active shipments found to track.
+      </motion.div>
+    );
+  }
+
+  const shipment = shipments[selectedIdx];
+  const latestTracking = trackingData.length > 0 ? trackingData[0] : null;
+
+  const pickup = shipment.pickup_lat ? [shipment.pickup_lat, shipment.pickup_lng] : [19.0760, 72.8777];
+  const dropoff = shipment.dropoff_lat ? [shipment.dropoff_lat, shipment.dropoff_lng] : [28.7041, 77.1025];
+  
+  const truckCurrent = latestTracking 
+    ? [latestTracking.lat, latestTracking.lng] 
+    : [
+        pickup[0] + (dropoff[0] - pickup[0]) * 0.5,
+        pickup[1] + (dropoff[1] - pickup[1]) * 0.5
+      ]; // Midway point as fallback
+
+  const routePolyline = [pickup, truckCurrent, dropoff];
+  const bounds = [pickup, dropoff];
+
+  const label = `${shipment.pickup_address?.substring(0, 15)}... → ${shipment.dropoff_address?.substring(0, 15)}...`;
+  const status = latestTracking?.status || shipment.status;
+  const eta = 'TBD';
+  const progress = 50;
 
   return (
     <motion.div 
@@ -104,8 +121,8 @@ const MapTracking = () => {
           value={selectedIdx}
           onChange={(e) => setSelectedIdx(Number(e.target.value))}
         >
-          {demoShipments.map((s, i) => (
-            <option key={s.id} value={i}>{s.id} — {s.label}</option>
+          {shipments.map((s, i) => (
+            <option key={s.id} value={i}>{s.id.substring(0,8).toUpperCase()} — {s.pickup_address?.substring(0,10)}...</option>
           ))}
         </select>
       </div>
@@ -127,26 +144,26 @@ const MapTracking = () => {
           <FitBounds bounds={bounds} />
           
           {/* Pickup marker */}
-          <Marker position={shipment.pickup} icon={pickupIcon}>
+          <Marker position={pickup} icon={pickupIcon}>
             <Popup>
               <div style={{ color: '#333', fontWeight: 'bold' }}>📦 Pickup</div>
-              <div style={{ color: '#555' }}>{shipment.label.split('→')[0].trim()}</div>
+              <div style={{ color: '#555' }}>{shipment.pickup_address}</div>
             </Popup>
           </Marker>
           
           {/* Dropoff marker */}
-          <Marker position={shipment.dropoff} icon={dropoffIcon}>
+          <Marker position={dropoff} icon={dropoffIcon}>
             <Popup>
               <div style={{ color: '#333', fontWeight: 'bold' }}>📍 Dropoff</div>
-              <div style={{ color: '#555' }}>{shipment.label.split('→')[1].trim()}</div>
+              <div style={{ color: '#555' }}>{shipment.dropoff_address}</div>
             </Popup>
           </Marker>
           
           {/* Truck current location */}
-          <Marker position={shipment.truckCurrent} icon={truckIcon}>
+          <Marker position={truckCurrent} icon={truckIcon}>
             <Popup>
-              <div style={{ color: '#333', fontWeight: 'bold' }}>🚛 {shipment.truck}</div>
-              <div style={{ color: '#555' }}>Driver: {shipment.driver}</div>
+              <div style={{ color: '#333', fontWeight: 'bold' }}>🚛 Carrier</div>
+              <div style={{ color: '#555' }}>Status: {status}</div>
             </Popup>
           </Marker>
 
@@ -160,24 +177,23 @@ const MapTracking = () => {
           />
         </MapContainer>
         
-        {/* Overlay Info Card */}
         <div className="absolute top-4 left-4 z-[1000] w-72">
            <div className="bg-surface/90 backdrop-blur-md border border-white/10 rounded-xl p-4 shadow-glass">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-white font-bold">{shipment.id}</h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-neonBlue/20 text-neonBlue font-semibold">{shipment.status}</span>
+                <h3 className="text-white font-bold">{shipment.id.substring(0,8).toUpperCase()}</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-neonBlue/20 text-neonBlue font-semibold">{status}</span>
               </div>
-              <p className="text-sm text-textSecondary mb-1">{shipment.label}</p>
-              <p className="text-xs text-textSecondary mb-1">🚛 {shipment.truck} · {shipment.driver}</p>
-              <p className="text-xs text-neonBlue mb-3">ETA: {shipment.eta}</p>
+              <p className="text-sm text-textSecondary mb-1">{label}</p>
+              <p className="text-xs text-textSecondary mb-1">Weight: {shipment.weight_tons} Tons</p>
+              <p className="text-xs text-neonBlue mb-3">ETA: {eta}</p>
               
               <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
                 <div 
                   className="bg-gradient-to-r from-primary to-neonBlue h-full rounded-full transition-all duration-500"
-                  style={{ width: `${shipment.progress}%` }}
+                  style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-xs text-textSecondary mt-1 text-right">{shipment.progress}% complete</p>
+              <p className="text-xs text-textSecondary mt-1 text-right">{progress}% complete</p>
            </div>
         </div>
 

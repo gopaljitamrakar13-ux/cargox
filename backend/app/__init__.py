@@ -40,12 +40,16 @@ def create_app(config_class=Config):
     from app.api.truck import truck_bp
     from app.api.shipment import shipment_bp
     from app.api.chat import chat_bp
+    from app.api.dashboard import bp as dashboard_bp
+    from app.api.notification import bp as notification_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/users')
     app.register_blueprint(truck_bp, url_prefix='/api/trucks')
     app.register_blueprint(shipment_bp, url_prefix='/api/shipments')
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(notification_bp)
 
     # Import and register Socket.IO events
     from app import socket_events

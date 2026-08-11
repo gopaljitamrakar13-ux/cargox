@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Truck, Globe, ShieldCheck, Zap, ArrowRight, BarChart3, Clock } from 'lucide-react';
+import { Truck, Globe, ShieldCheck, Zap, ArrowRight, BarChart3, Clock, Menu, X } from 'lucide-react';
 import HeroScene from '../../components/3d/HeroScene';
 import GlassCard from '../../components/ui/GlassCard';
 
 const Landing = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { 
@@ -30,7 +31,7 @@ const Landing = () => {
           <Truck className="text-primary w-8 h-8" />
           CargoX<span className="text-primary">.</span>
         </div>
-        <div className="flex gap-4">
+        <div className="hidden md:flex gap-4">
           <Link to="/auth/login" className="px-6 py-2 text-white hover:text-primary transition-colors font-medium">
             Sign In
           </Link>
@@ -38,7 +39,27 @@ const Landing = () => {
             Join Network
           </Link>
         </div>
+        
+        {/* Mobile Hamburger */}
+        <button 
+          className="md:hidden text-white p-2 focus:outline-none"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
+        </button>
       </nav>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-[88px] left-0 w-full px-6 py-6 bg-surface/95 backdrop-blur-xl border-b border-white/10 z-40 flex flex-col gap-4 shadow-xl">
+          <Link to="/auth/login" className="btn-outline w-full justify-center py-3" onClick={() => setIsMobileMenuOpen(false)}>
+            Sign In
+          </Link>
+          <Link to="/auth/register" className="btn-primary w-full justify-center py-3" onClick={() => setIsMobileMenuOpen(false)}>
+            Join Network
+          </Link>
+        </div>
+      )}
 
       {/* Hero Section */}
       <main className="flex-1 relative z-10 flex flex-col items-center justify-center text-center px-4 max-w-5xl mx-auto mt-20 mb-32">
@@ -54,7 +75,7 @@ const Landing = () => {
             </span>
           </motion.div>
           
-          <motion.h1 variants={itemVariants} className="text-6xl md:text-8xl font-display font-black text-white leading-tight">
+          <motion.h1 variants={itemVariants} className="text-[clamp(2.75rem,8vw,6rem)] font-display font-black text-white leading-tight">
             Logistics, <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-neonBlue to-primary animate-pulse">
               Reimagined.
@@ -65,11 +86,11 @@ const Landing = () => {
             CargoX instantly connects shippers with a highly vetted network of carriers. Experience real-time visibility, automated pricing, and premium reliability.
           </motion.p>
           
-          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-            <Link to="/auth/register" className="btn-primary text-lg px-8 py-4 flex items-center justify-center gap-2 shadow-neon-blue">
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center pt-8 w-full px-4 sm:px-0 max-w-md mx-auto sm:max-w-none">
+            <Link to="/auth/register" className="btn-primary text-lg w-full sm:w-auto px-8 py-4 flex items-center justify-center gap-2 shadow-neon-blue">
               Get Started <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link to="/auth/login" className="btn-outline text-lg px-8 py-4 flex items-center justify-center bg-white/5">
+            <Link to="/auth/login" className="btn-outline text-lg w-full sm:w-auto px-8 py-4 flex items-center justify-center bg-white/5">
               View Live Demo
             </Link>
           </motion.div>
