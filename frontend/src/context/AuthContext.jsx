@@ -44,7 +44,10 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true };
     } catch (error) {
-      const errorMsg = error.response?.data?.error || error.response?.data?.msg || 'Login failed';
+      let errorMsg = error.response?.data?.error || error.response?.data?.msg || 'Login failed. Please try again.';
+      if (typeof errorMsg !== 'string' || errorMsg.includes('<html') || errorMsg.length > 200) {
+        errorMsg = 'Login failed. Please try again.';
+      }
       return { success: false, error: errorMsg };
     }
   };
@@ -55,7 +58,10 @@ export const AuthProvider = ({ children }) => {
       // After registering, log in to get the full profile
       return await login(userData.email, userData.password);
     } catch (error) {
-      const errorMsg = error.response?.data?.error || error.response?.data?.msg || error.message || 'Registration failed';
+      let errorMsg = error.response?.data?.error || error.response?.data?.msg || 'Registration failed. Please try again.';
+      if (typeof errorMsg !== 'string' || errorMsg.includes('<html') || errorMsg.length > 200) {
+        errorMsg = 'Registration failed. Please try again.';
+      }
       return { success: false, error: errorMsg };
     }
   };

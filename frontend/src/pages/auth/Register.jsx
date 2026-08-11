@@ -52,6 +52,7 @@ const Register = () => {
             label="Full Name"
             type="text"
             placeholder="John Doe"
+            disabled={isLoading}
             {...registerForm('full_name', { required: 'Name is required' })}
             error={errors.full_name?.message}
           />
@@ -60,6 +61,7 @@ const Register = () => {
             label="Email Address"
             type="email"
             placeholder="john@example.com"
+            disabled={isLoading}
             {...registerForm('email', { required: 'Email is required' })}
             error={errors.email?.message}
           />
@@ -68,6 +70,7 @@ const Register = () => {
             <label className="text-sm font-medium text-textSecondary mb-2">Account Type</label>
             <select 
               className="glass-input appearance-none bg-surface"
+              disabled={isLoading}
               {...registerForm('role', { required: 'Role is required' })}
             >
               <option value="Customer">Customer (Sender)</option>
@@ -81,6 +84,7 @@ const Register = () => {
             label="Password"
             type="password"
             placeholder="••••••••"
+            disabled={isLoading}
             {...registerForm('password', { 
               required: 'Password is required',
               minLength: { value: 6, message: 'Minimum 6 characters' }
@@ -92,6 +96,7 @@ const Register = () => {
             label="Confirm Password"
             type="password"
             placeholder="••••••••"
+            disabled={isLoading}
             {...registerForm('confirmPassword', { 
               validate: value => value === password || 'Passwords do not match'
             })}
